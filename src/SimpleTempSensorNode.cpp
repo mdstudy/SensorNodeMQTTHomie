@@ -44,7 +44,7 @@ void SimpleTempSensorNode::setupHomie() {
         homie = new Homie(address, port, username, password, devicename, deviceid, 1);
         tempNode = new HomieNode(homie, "temperatureSensor", nodeName, "DS18B20", 4);
         char buffer[20];
-        sprintf(buffer, "%f:%f", DOWN_BOUND_TEMP, UPPER_BOUND_TEMP);
+        sprintf(buffer, "%d:%d", DOWN_BOUND_TEMP, UPPER_BOUND_TEMP);
         tempProp = new HomieNodeFloatProperty("temperatur", temppropname, buffer, "°C", false, true, NULL, NULL);
         tempNode->addProperty(tempProp);
         homie->addNode(tempNode);
@@ -58,6 +58,10 @@ void SimpleTempSensorNode::loop()
     if (WiFi.status() != WL_CONNECTED)
     {
         setupWIFIConnect(true);
+    }
+    EVERY_N_SECONDS(1)
+    {
+        syncLocalTime();
     }
     EVERY_N_SECONDS(UPDATE_DELAY)
     {
@@ -106,9 +110,6 @@ void SimpleTempSensorNode::setupWIFIConnect(bool connectOnly)
         inited = true;
         setupHomie();
     }
-
-    //setupMQTT(connectOnly);
-    //handle mqtt broker here
 }
 
 void SimpleTempSensorNode::configureNtp(uint16_t daylight)
@@ -246,6 +247,7 @@ void SimpleTempSensorNode::initHttp()
         request->send(response);
         SimpleTempSensorNode::self->restartRequired = true;
     });
+    server.addHandler(mqttConfigHandler);
     server.begin();
 }
 
